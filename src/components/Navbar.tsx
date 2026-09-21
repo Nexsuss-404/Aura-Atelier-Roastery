@@ -22,6 +22,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
     { id: 'menu', label: 'Menu' },
     { id: 'gallery', label: 'Gallery' },
     { id: 'checkout', label: 'Checkout' },
+    { id: 'states', label: 'States' },
   ];
 
   const handleNav = (page: PageType) => {

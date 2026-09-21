@@ -1,4 +1,67 @@
-export type PageType = 'home' | 'menu' | 'gallery' | 'checkout';
+export type PageType = 'home' | 'menu' | 'gallery' | 'checkout' | 'states';
+
+export type PageStateCategory = 
+  | 'Interaction'
+  | 'Feedback & Async'
+  | 'Access & Security'
+  | 'Form & Input'
+  | 'Lifecycle & Records'
+  | 'Network & Transfer';
+
+export type PageStateId = 
+  | 'default'
+  | 'hover'
+  | 'focus'
+  | 'active'
+  | 'pressed'
+  | 'selected'
+  | 'disabled'
+  | 'loading'
+  | 'success'
+  | 'error'
+  | 'warning'
+  | 'empty'
+  | 'skeleton'
+  | 'offline'
+  | 'restricted'
+  | 'authentication'
+  | 'not_found'
+  | 'maintenance'
+  | 'locked'
+  | 'expanded'
+  | 'collapsed'
+  | 'checked'
+  | 'unchecked'
+  | 'indeterminate'
+  | 'read_only'
+  | 'required'
+  | 'optional'
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'cancelled'
+  | 'expired'
+  | 'draft'
+  | 'published'
+  | 'archived'
+  | 'no_results'
+  | 'partial'
+  | 'syncing'
+  | 'updating'
+  | 'saving'
+  | 'saved'
+  | 'deleted'
+  | 'uploading'
+  | 'downloading'
+  | 'connection_lost';
+
+export interface PageStateMeta {
+  id: PageStateId;
+  label: string;
+  category: PageStateCategory;
+  description: string;
+  badgeTone?: 'neutral' | 'accent' | 'warning' | 'error' | 'success' | 'info';
+}
 
 export type Category = 
   | 'all'

@@ -8,6 +8,7 @@ import { HomePage } from './components/HomePage';
 import { MenuPage } from './components/MenuPage';
 import { InteractiveGallery } from './components/InteractiveGallery';
 import { CheckoutPage } from './components/CheckoutPage';
+import { PageStatesShowcase } from './components/PageStatesShowcase';
 import { DrinkCustomizerModal } from './components/DrinkCustomizerModal';
 import { CartDrawer } from './components/CartDrawer';
 import { Toast } from './components/Toast';
@@ -65,6 +66,13 @@ const AppContent: React.FC = () => {
 
             {currentPage === 'checkout' && (
               <CheckoutPage onNavigate={handleNavigate} />
+            )}
+
+            {currentPage === 'states' && (
+              <PageStatesShowcase
+                onNavigateHome={() => handleNavigate('home')}
+                onNavigateMenu={() => handleNavigate('menu')}
+              />
             )}
           </motion.div>
         </AnimatePresence>
