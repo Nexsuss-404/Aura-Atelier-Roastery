@@ -1,0 +1,6 @@
+{
+  "name": "Aura Artisanal Coffee Roastery & Cafe",
+  "description": "Artisanal coffee roastery & cafe featuring handcrafted espresso, single-origin roasts, interactive sensory gallery, and seamless checkout.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
