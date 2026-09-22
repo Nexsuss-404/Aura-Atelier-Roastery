@@ -1,7 +1,8 @@
-import React from 'react';
-import { Sparkles, Plus, SlidersHorizontal, Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sparkles, Plus, Check, SlidersHorizontal, Star } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../context/CartContext';
+import { handleImageError } from '../utils/imageFallback';
 
 interface ProductCardProps {
   product: Product;
@@ -16,6 +17,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onExploreGallery,
 }) => {
   const { addItem } = useCart();
+  const [justAdded, setJustAdded] = useState(false);
+
+  React.useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (justAdded) {
+      timer = setTimeout(() => setJustAdded(false), 1400);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [justAdded]);
 
   const discountedPrice =
     product.isDailySpecial && product.specialDiscountPercent
@@ -24,6 +36,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (justAdded) return;
     addItem(
       product,
       {
@@ -42,6 +55,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       },
       1
     );
+    setJustAdded(true);
   };
 
   return (
@@ -57,6 +71,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           src={product.image}
           alt={product.name}
           loading="lazy"
+          onError={handleImageError}
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
           referrerPolicy="no-referrer"
         />
@@ -208,10 +223,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               type="button"
               id={`quick-add-btn-${product.id}`}
               onClick={handleQuickAdd}
-              title="Quick Add to Bag"
-              className="w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-[#1A1A18] text-[#F8F7F4] hover:bg-[#9D8461] active:scale-90 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+              title={justAdded ? "Added to Bag" : "Quick Add to Bag"}
+              className={`w-9 h-9 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-2xs ${
+                justAdded
+                  ? 'bg-[#2D6A4F] text-white scale-105'
+                  : 'bg-[#1A1A18] text-[#F8F7F4] hover:bg-[#9D8461] active:scale-90'
+              }`}
             >
-              <Plus className="w-3.5 h-3.5" />
+              {justAdded ? (
+                <Check className="w-4 h-4 animate-in zoom-in-75 duration-200" />
+              ) : (
+                <Plus className="w-3.5 h-3.5" />
+              )}
             </button>
           </div>
         </div>

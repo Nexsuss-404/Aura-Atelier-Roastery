@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingBag, X } from 'lucide-react';
 import { Product } from '../types';
+import { handleImageError } from '../utils/imageFallback';
 
 export interface ToastData {
   id: string;
@@ -18,6 +19,14 @@ interface ToastProps {
 }
 
 export const Toast: React.FC<ToastProps> = ({ toast, onClose, onOpenCart }) => {
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      onClose();
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [toast, onClose]);
+
   return (
     <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-5 z-50 pointer-events-none flex justify-end">
       <AnimatePresence>
@@ -34,6 +43,7 @@ export const Toast: React.FC<ToastProps> = ({ toast, onClose, onOpenCart }) => {
               <img
                 src={toast.product.image}
                 alt={toast.product.name}
+                onError={handleImageError}
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />

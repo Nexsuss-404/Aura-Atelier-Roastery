@@ -209,10 +209,7 @@ export const KineticHeroHeadline: React.FC<KineticHeroHeadlineProps> = ({
       style={{ perspective: '1200px' }}
     >
       {/* Line 1 */}
-      <span
-        className="block text-[100px] leading-[100px] hero-headline-line1"
-        style={{ fontSize: '100px', lineHeight: '100px' }}
-      >
+      <span className="block leading-[0.92] sm:leading-[0.95] tracking-[-0.035em] hero-headline-line1">
         {firstLineWords.map((word, idx) => (
           <span
             key={`hero-w-${idx}`}

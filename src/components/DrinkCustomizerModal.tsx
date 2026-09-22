@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Product, DrinkCustomization } from '../types';
 import { useCart } from '../context/CartContext';
+import { handleImageError } from '../utils/imageFallback';
 
 interface DrinkCustomizerModalProps {
   product: Product | null;
@@ -19,14 +20,18 @@ interface DrinkCustomizerModalProps {
   onAddedSuccess?: () => void;
 }
 
-export const DrinkCustomizerModal: React.FC<DrinkCustomizerModalProps> = ({
+interface DrinkCustomizerModalDialogProps {
+  product: Product;
+  onClose: () => void;
+  onAddedSuccess?: () => void;
+}
+
+const DrinkCustomizerModalDialog: React.FC<DrinkCustomizerModalDialogProps> = ({
   product,
   onClose,
   onAddedSuccess,
 }) => {
   const { addItem, setIsCartOpen } = useCart();
-
-  if (!product) return null;
 
   const isBeanProduct = product.category === 'beans';
   const isPastry = product.category === 'pastries';
@@ -47,6 +52,20 @@ export const DrinkCustomizerModal: React.FC<DrinkCustomizerModalProps> = ({
 
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
+
+  // Keyboard and scroll accessibility
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [onClose]);
 
   // Dynamic price calculation
   const calculateCurrentPrice = () => {
@@ -104,7 +123,18 @@ export const DrinkCustomizerModal: React.FC<DrinkCustomizerModalProps> = ({
     return cal;
   })();
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const handleAddToCart = () => {
+    if (isAdded) return;
     addItem(product, customization, quantity);
     setIsAdded(true);
     if (onAddedSuccess) onAddedSuccess();
@@ -117,15 +147,21 @@ export const DrinkCustomizerModal: React.FC<DrinkCustomizerModalProps> = ({
   };
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto bg-black/40 backdrop-blur-xs">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 15 }}
-          transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="relative w-full max-w-2xl bg-[#F8F7F4] rounded-2xl shadow-2xl border border-[#1A1A18]/10 overflow-hidden my-auto max-h-[92dvh] sm:max-h-[90vh] flex flex-col"
-        >
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto bg-black/40 backdrop-blur-xs"
+    >
+      <motion.div
+        onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0, scale: 0.96, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 15 }}
+        transition={{ duration: 0.22, ease: 'easeOut' }}
+        className="relative w-full max-w-2xl bg-[#F8F7F4] rounded-2xl shadow-2xl border border-[#1A1A18]/10 overflow-hidden my-auto max-h-[92dvh] sm:max-h-[90vh] flex flex-col"
+      >
           {/* Header */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[#1A1A18]/10 bg-white">
             <div className="flex items-center gap-3.5">
@@ -133,6 +169,7 @@ export const DrinkCustomizerModal: React.FC<DrinkCustomizerModalProps> = ({
                 <img
                   src={product.image}
                   alt={product.name}
+                  onError={handleImageError}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -503,7 +540,25 @@ export const DrinkCustomizerModal: React.FC<DrinkCustomizerModalProps> = ({
             </motion.button>
           </div>
         </motion.div>
-      </div>
-    </AnimatePresence>
-  );
-};
+      </motion.div>
+    );
+  };
+
+  export const DrinkCustomizerModal: React.FC<DrinkCustomizerModalProps> = ({
+    product,
+    onClose,
+    onAddedSuccess,
+  }) => {
+    return (
+      <AnimatePresence>
+        {product && (
+          <DrinkCustomizerModalDialog
+            key={product.id}
+            product={product}
+            onClose={onClose}
+            onAddedSuccess={onAddedSuccess}
+          />
+        )}
+      </AnimatePresence>
+    );
+  };

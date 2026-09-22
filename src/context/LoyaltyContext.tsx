@@ -53,21 +53,54 @@ const LoyaltyContext = createContext<LoyaltyContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_KEY = 'aura_coffee_loyalty_user';
 
-export const LoyaltyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<LoyaltyUser>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
+const safeHydrateUser = (): LoyaltyUser => {
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object' && typeof parsed.points === 'number' && typeof parsed.tier === 'string') {
+        return {
+          ...INITIAL_LOYALTY_USER,
+          ...parsed,
+          points: Math.max(0, parsed.points),
+          lifetimePoints: Math.max(parsed.points || 0, parsed.lifetimePoints || 0),
+          history: Array.isArray(parsed.history) ? parsed.history : INITIAL_LOYALTY_USER.history,
+        };
       }
-    } catch {
-      // fallback
     }
-    return INITIAL_LOYALTY_USER;
-  });
+  } catch (err) {
+    console.warn('Could not restore loyalty user:', err);
+  }
+  return INITIAL_LOYALTY_USER;
+};
+
+export const LoyaltyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<LoyaltyUser>(() => safeHydrateUser());
 
   const [activeRewardDiscount, setActiveRewardDiscount] = useState<number>(0);
   const [activeFreeItemCategory, setActiveFreeItemCategory] = useState<string | null>(null);
+
+  // Cross-tab synchronization
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === LOCAL_STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed && typeof parsed === 'object' && typeof parsed.points === 'number') {
+            setUser((prev) => ({
+              ...prev,
+              ...parsed,
+            }));
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   useEffect(() => {
     try {

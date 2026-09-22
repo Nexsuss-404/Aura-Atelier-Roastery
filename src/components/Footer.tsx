@@ -77,14 +77,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   Checkout
                 </button>
               </li>
-              <li>
-                <button
-                  onClick={() => onNavigate('states')}
-                  className="hover:text-[#9D8461] hover:translate-x-0.5 transition-all text-left cursor-pointer flex items-center gap-1.5"
-                >
-                  <span>Design States (45)</span>
-                </button>
-              </li>
             </ul>
           </div>
 

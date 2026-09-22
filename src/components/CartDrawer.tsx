@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   X, 
@@ -11,6 +11,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { handleImageError } from '../utils/imageFallback';
 
 interface CartDrawerProps {
   onProceedToCheckout: () => void;
@@ -39,6 +40,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
   const [inputCode, setInputCode] = useState('');
   const [promoMessage, setPromoMessage] = useState<{ success: boolean; text: string } | null>(null);
+
+  // Keyboard accessibility and body scroll lock
+  useEffect(() => {
+    if (!isCartOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsCartOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isCartOpen, setIsCartOpen]);
 
   if (!isCartOpen) return null;
 
@@ -157,6 +173,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <img
                         src={item.product.image}
                         alt={item.product.name}
+                        onError={handleImageError}
                         className="w-13 h-13 rounded-xl object-cover border border-[#1A1A18]/10 flex-shrink-0"
                         referrerPolicy="no-referrer"
                       />

@@ -32,6 +32,7 @@ interface CartContextType {
   setCustomerInfo: (info: { name: string; email: string; phone: string }) => void;
   activeOrder: Order | null;
   submitOrder: (paymentMethod: 'apple_pay' | 'google_pay' | 'card') => Order;
+  cancelOrder: (orderId: string) => void;
   orderHistory: Order[];
   isCartOpen: boolean;
   setIsCartOpen: (open: boolean) => void;
@@ -44,18 +45,50 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const CART_STORAGE_KEY = 'aura_coffee_cart_items';
 const ORDER_STORAGE_KEY = 'aura_coffee_orders';
 
+const safeHydrateItems = (): CartItem[] => {
+  try {
+    const saved = localStorage.getItem(CART_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (it) =>
+            it &&
+            typeof it === 'object' &&
+            it.product &&
+            typeof it.product.id === 'string' &&
+            typeof it.unitPrice === 'number' &&
+            !isNaN(it.unitPrice) &&
+            typeof it.quantity === 'number' &&
+            it.quantity > 0
+        );
+      }
+    }
+  } catch (err) {
+    console.warn('Could not restore cart items:', err);
+  }
+  return [];
+};
+
+const safeHydrateOrders = (): Order[] => {
+  try {
+    const saved = localStorage.getItem(ORDER_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((o) => o && typeof o === 'object' && o.orderId && o.status);
+      }
+    }
+  } catch (err) {
+    console.warn('Could not restore orders:', err);
+  }
+  return [];
+};
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { earnPoints, activeRewardDiscount, clearActiveReward, user } = useLoyalty();
 
-  const [items, setItems] = useState<CartItem[]>(() => {
-    try {
-      const saved = localStorage.getItem(CART_STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
-    }
-    return [];
-  });
+  const [items, setItems] = useState<CartItem[]>(() => safeHydrateItems());
 
   const [promoCode, setPromoCode] = useState<string>('');
   const [promoDiscountPercent, setPromoDiscountPercent] = useState<number>(0);
@@ -74,22 +107,47 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearLastAddedToast = () => setLastAddedToast(null);
 
-  const [orderHistory, setOrderHistory] = useState<Order[]>(() => {
-    try {
-      const saved = localStorage.getItem(ORDER_STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
-    }
-    return [];
-  });
+  const [orderHistory, setOrderHistory] = useState<Order[]>(() => safeHydrateOrders());
 
   const [activeOrder, setActiveOrder] = useState<Order | null>(() => {
-    if (orderHistory.length > 0 && orderHistory[0].status !== 'completed') {
-      return orderHistory[0];
+    const initialOrders = safeHydrateOrders();
+    if (initialOrders.length > 0 && initialOrders[0].status !== 'completed' && initialOrders[0].status !== 'cancelled') {
+      return initialOrders[0];
     }
     return null;
   });
+
+  // Cross-tab synchronization
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === CART_STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setItems(parsed);
+          }
+        } catch {
+          // ignore
+        }
+      }
+      if (e.key === ORDER_STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setOrderHistory(parsed);
+            if (parsed.length > 0 && parsed[0].status !== 'completed' && parsed[0].status !== 'cancelled') {
+              setActiveOrder(parsed[0]);
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Save cart
   useEffect(() => {
@@ -136,6 +194,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveOrder((prev) => (prev && prev.orderId === orderId ? { ...prev, status } : prev));
     setOrderHistory((prev) =>
       prev.map((o) => (o.orderId === orderId ? { ...o, status } : o))
+    );
+  };
+
+  const cancelOrder = (orderId: string) => {
+    setActiveOrder((prev) => (prev && prev.orderId === orderId ? { ...prev, status: 'cancelled' } : prev));
+    setOrderHistory((prev) =>
+      prev.map((o) => (o.orderId === orderId ? { ...o, status: 'cancelled' } : o))
     );
   };
 
@@ -354,6 +419,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCustomerInfo,
         activeOrder,
         submitOrder,
+        cancelOrder,
         orderHistory,
         isCartOpen,
         setIsCartOpen,

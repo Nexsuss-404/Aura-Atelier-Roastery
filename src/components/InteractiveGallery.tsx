@@ -11,6 +11,7 @@ import {
 import { Product, RoastLevel } from '../types';
 import { PRODUCTS } from '../data/coffeeData';
 import { RoastCurveVisualizer } from './RoastCurveVisualizer';
+import { handleImageError } from '../utils/imageFallback';
 
 interface InteractiveGalleryProps {
   onSelectProductToOrder: (product: Product) => void;
@@ -523,6 +524,7 @@ export const InteractiveGallery: React.FC<InteractiveGalleryProps> = ({
                       <img
                         src={p.image}
                         alt={p.name}
+                        onError={handleImageError}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                         referrerPolicy="no-referrer"
                       />

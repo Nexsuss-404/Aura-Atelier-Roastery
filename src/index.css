@@ -155,3 +155,25 @@
   }
 }
 
+/* Universal Interaction States (Focus, Pressed/Active, Disabled) */
+:focus-visible {
+  outline: 2px solid #9D8461 !important;
+  outline-offset: 2px !important;
+}
+
+button:active:not(:disabled),
+a:active,
+[role="button"]:active:not(:disabled) {
+  transform: scale(0.982);
+  transition: transform 0.08s cubic-bezier(0.2, 0.8, 0.4, 1);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.45;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+

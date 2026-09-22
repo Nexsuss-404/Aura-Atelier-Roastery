@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShoppingBag, 
@@ -17,12 +17,20 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
   const { itemCount, setIsCartOpen, activeOrder } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileMenuOpen(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [mobileMenuOpen]);
+
   const navLinks: { id: PageType; label: string }[] = [
     { id: 'home', label: 'Home' },
     { id: 'menu', label: 'Menu' },
     { id: 'gallery', label: 'Gallery' },
     { id: 'checkout', label: 'Checkout' },
-    { id: 'states', label: 'States' },
   ];
 
   const handleNav = (page: PageType) => {

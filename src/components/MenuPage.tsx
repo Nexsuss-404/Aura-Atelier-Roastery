@@ -39,9 +39,19 @@ export const MenuPage: React.FC<MenuPageProps> = ({
   onExploreGallery,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<Category>('all');
+  const [isCategoryLoading, setIsCategoryLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating' | 'caffeine'>('featured');
   const [activeFilterTag, setActiveFilterTag] = useState<'all' | 'special' | 'single-origin' | 'cold'>('all');
+
+  const handleCategorySelect = (catId: Category) => {
+    if (catId === selectedCategory) return;
+    setIsCategoryLoading(true);
+    setSelectedCategory(catId);
+    setTimeout(() => {
+      setIsCategoryLoading(false);
+    }, 220);
+  };
 
   const filteredProducts = useMemo(() => {
     let list = PRODUCTS.filter((item) => {
@@ -141,7 +151,7 @@ export const MenuPage: React.FC<MenuPageProps> = ({
               <button
                 key={cat.id}
                 id={`cat-btn-${cat.id}`}
-                onClick={() => setSelectedCategory(cat.id)}
+                onClick={() => handleCategorySelect(cat.id)}
                 className={`px-4 py-2 min-h-[38px] rounded-full whitespace-nowrap transition-all cursor-pointer flex items-center justify-center shrink-0 ${
                   isSelected
                     ? 'bg-[#1A1A18] text-[#F8F7F4] border border-[#1A1A18]'
@@ -196,11 +206,42 @@ export const MenuPage: React.FC<MenuPageProps> = ({
       </div>
 
       {/* Product Grid */}
-      {filteredProducts.length === 0 ? (
+      {isCategoryLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          {[1, 2, 3, 4, 5, 6].map((sk) => (
+            <div
+              key={sk}
+              className="bg-[#FCFBF9] border border-[#1A1A18]/8 rounded-2xl overflow-hidden animate-pulse flex flex-col justify-between"
+            >
+              <div className="aspect-[4/3] bg-[#EFECE6]" />
+              <div className="p-5 sm:p-6 space-y-4">
+                <div className="space-y-2">
+                  <div className="h-6 w-3/4 bg-[#EFECE6] rounded-md" />
+                  <div className="h-3.5 w-1/2 bg-[#EFECE6] rounded-md" />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="h-3 w-full bg-[#EFECE6] rounded-md" />
+                  <div className="h-3 w-4/5 bg-[#EFECE6] rounded-md" />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <div className="h-5 w-16 bg-[#EFECE6] rounded-full" />
+                  <div className="h-5 w-20 bg-[#EFECE6] rounded-full" />
+                </div>
+                <div className="pt-4 border-t border-[#1A1A18]/8 flex items-center justify-between">
+                  <div className="h-7 w-20 bg-[#EFECE6] rounded-md" />
+                  <div className="h-9 w-24 bg-[#EFECE6] rounded-full" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredProducts.length === 0 ? (
         <div className="py-16 text-center space-y-3 bg-white border border-[#1A1A18]/10 rounded-2xl p-8 max-w-lg mx-auto">
           <Coffee className="w-8 h-8 text-[#9D8461] mx-auto opacity-70" />
           <h3 className="font-serif text-2xl font-light text-[#1A1A18]">
-            No coffees found matching "{searchQuery}"
+            {searchQuery
+              ? `No coffees found matching "${searchQuery}"`
+              : 'No coffees match the selected filter criteria'}
           </h3>
           <p className="font-sans font-light text-xs text-[#1A1A18]/60">
             Try searching for "Ethiopia", "Geisha", "Cold Brew", or reset filters.

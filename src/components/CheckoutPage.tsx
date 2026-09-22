@@ -19,6 +19,7 @@ import confetti from 'canvas-confetti';
 import { useCart } from '../context/CartContext';
 import { STORE_LOCATIONS } from '../data/coffeeData';
 import { PageType, Order } from '../types';
+import { handleImageError } from '../utils/imageFallback';
 
 interface CheckoutPageProps {
   onNavigate: (page: PageType) => void;
@@ -50,6 +51,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
     setCustomTipAmount,
     calculatedTip,
     submitOrder,
+    cancelOrder,
     activeOrder,
   } = useCart();
 
@@ -67,14 +69,21 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
   const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(720); // 12 minutes countdown
 
+  // 1. ORDER CONFIRMATION VIEW
+  const activeReceipt = completedOrder || (activeOrder && activeOrder.status !== 'completed' ? activeOrder : null);
+
   // Live countdown effect when receipt is active
   useEffect(() => {
-    if (!completedOrder && !activeOrder) return;
+    if (!activeReceipt) return;
+    if (activeReceipt.status === 'ready' || activeReceipt.status === 'completed' || activeReceipt.status === 'cancelled') {
+      setSecondsRemaining(0);
+      return;
+    }
     const interval = setInterval(() => {
       setSecondsRemaining((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
-  }, [completedOrder, activeOrder]);
+  }, [activeReceipt?.orderId, activeReceipt?.status]);
 
   const formatCountdown = (secs: number) => {
     const mins = Math.floor(secs / 60);
@@ -103,8 +112,25 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
   const handlePlaceOrder = () => {
     setFormError(null);
 
+    if (isProcessing) return;
+
+    if (items.length === 0) {
+      setFormError('Your order bag is currently empty.');
+      return;
+    }
+
+    if (typeof window !== 'undefined' && !window.navigator.onLine) {
+      setFormError('Connection Lost: Unable to process payment while offline. Please reconnect to finalize your order.');
+      return;
+    }
+
     if (!customerInfo.name.trim()) {
       setFormError('Please provide your name for the barista pickup callout.');
+      return;
+    }
+
+    if (!customerInfo.email.trim() || !customerInfo.email.includes('@')) {
+      setFormError('Please provide a valid email address to receive your roastery receipt.');
       return;
     }
 
@@ -113,9 +139,31 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
       return;
     }
 
+    if (paymentMethod === 'card') {
+      if (!cardNumber.trim() || cardNumber.length < 8) {
+        setFormError('Please provide a valid 16-digit card number.');
+        return;
+      }
+      if (!cardExpiry.trim() || cardExpiry.length < 4) {
+        setFormError('Please provide a valid card expiration date (MM/YY).');
+        return;
+      }
+      if (!cardCvv.trim() || cardCvv.length < 3) {
+        setFormError('Please enter a valid 3 or 4 digit CVV code.');
+        return;
+      }
+    }
+
     setIsProcessing(true);
 
     setTimeout(() => {
+      // Re-verify network status before finalizing
+      if (typeof window !== 'undefined' && !window.navigator.onLine) {
+        setIsProcessing(false);
+        setFormError('Network was interrupted during payment processing. Please reconnect and try again.');
+        return;
+      }
+
       const order = submitOrder(paymentMethod);
       setIsProcessing(false);
       setCompletedOrder(order);
@@ -132,9 +180,6 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
       }
     }, 1200);
   };
-
-  // 1. ORDER CONFIRMATION VIEW
-  const activeReceipt = completedOrder || (activeOrder && activeOrder.status !== 'completed' ? activeOrder : null);
 
   if (activeReceipt) {
     return (
@@ -187,56 +232,80 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
           </div>
 
           {/* Barista Status Steps */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
-            {[
-              {
-                title: 'Manifest Queued',
-                subtitle: 'Barista ticket printed',
-                active: true,
-                completed: true,
-              },
-              {
-                title: 'Dosing & Grinding',
-                subtitle: 'Mahlkönig EK43 single dose',
-                active: true,
-                completed: true,
-              },
-              {
-                title: 'Extraction & Steam',
-                subtitle: '9-bar espresso pull & microfoam',
-                active: true,
-                completed: false,
-              },
-              {
-                title: 'Ready for Service',
-                subtitle: 'Ledge pickup or courier box',
-                active: false,
-                completed: false,
-              },
-            ].map((step, idx) => (
-              <div
-                key={step.title}
-                className={`p-3.5 rounded-xl border font-sans text-xs space-y-1 ${
-                  step.active
-                    ? 'border-[#1A1A18] bg-[#F8F7F4]'
-                    : 'border-[#1A1A18]/10 bg-white opacity-40'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-[#9D8461]">
-                    Stage 0{idx + 1}
-                  </span>
-                  {step.completed && (
-                    <span className="text-[11px] text-[#9D8461] font-semibold">✓</span>
-                  )}
-                </div>
-                <h4 className="font-serif text-base font-normal text-[#1A1A18]">
-                  {step.title}
-                </h4>
-                <p className="text-[11px] text-[#1A1A18]/60">{step.subtitle}</p>
+          {activeReceipt.status === 'cancelled' ? (
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-center justify-between font-sans text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-600" />
+                <span className="font-semibold uppercase tracking-[0.05em]">Order Cancelled</span>
+                <span className="text-amber-700 hidden sm:inline">• Voided ticket before extraction</span>
               </div>
-            ))}
-          </div>
+              <span className="text-amber-800 font-medium text-[11px]">Refund logged</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
+              {[
+                {
+                  title: 'Manifest Queued',
+                  subtitle: 'Barista ticket printed',
+                  stepLevel: 1,
+                },
+                {
+                  title: 'Dosing & Grinding',
+                  subtitle: 'Mahlkönig EK43 single dose',
+                  stepLevel: 2,
+                },
+                {
+                  title: 'Extraction & Steam',
+                  subtitle: '9-bar espresso pull & microfoam',
+                  stepLevel: 3,
+                },
+                {
+                  title: 'Ready for Service',
+                  subtitle: 'Ledge pickup or courier box',
+                  stepLevel: 4,
+                },
+              ].map((step) => {
+                const currentLevel =
+                  activeReceipt.status === 'placed'
+                    ? 1
+                    : activeReceipt.status === 'grinding'
+                    ? 2
+                    : activeReceipt.status === 'brewing'
+                    ? 3
+                    : 4;
+                const isCurrent = currentLevel === step.stepLevel;
+                const isDone = currentLevel > step.stepLevel || activeReceipt.status === 'ready' || activeReceipt.status === 'completed';
+
+                return (
+                  <div
+                    key={step.title}
+                    className={`p-3.5 rounded-xl border font-sans text-xs space-y-1 transition-all ${
+                      isCurrent
+                        ? 'border-[#1A1A18] bg-[#F8F7F4] shadow-xs'
+                        : isDone
+                        ? 'border-[#9D8461]/40 bg-white'
+                        : 'border-[#1A1A18]/10 bg-white opacity-40'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-[#9D8461]">
+                        Stage 0{step.stepLevel}
+                      </span>
+                      {isDone ? (
+                        <span className="text-[11px] text-[#9D8461] font-semibold">✓</span>
+                      ) : isCurrent ? (
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#9D8461] animate-ping" />
+                      ) : null}
+                    </div>
+                    <h4 className="font-serif text-base font-normal text-[#1A1A18]">
+                      {step.title}
+                    </h4>
+                    <p className="text-[11px] text-[#1A1A18]/60">{step.subtitle}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Order Manifest Summary */}
           <div className="border-t border-[#1A1A18]/10 pt-6 space-y-4">
@@ -253,6 +322,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                     <img
                       src={item.product.image}
                       alt={item.product.name}
+                      onError={handleImageError}
                       className="w-11 h-11 rounded-lg object-cover border border-[#1A1A18]/10"
                       referrerPolicy="no-referrer"
                     />
@@ -299,19 +369,35 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <button
-              onClick={() => {
-                try {
-                  window.print();
-                } catch {
-                  // Fallback
-                }
-              }}
-              className="px-5 py-2.5 rounded-full border border-[#1A1A18]/20 bg-white text-xs font-sans font-medium uppercase tracking-[0.06em] text-[#1A1A18] hover:border-[#1A1A18] transition-colors flex items-center gap-2 cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Print Receipt</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  try {
+                    window.print();
+                  } catch {
+                    // Fallback
+                  }
+                }}
+                className="px-5 py-2.5 rounded-full border border-[#1A1A18]/20 bg-white text-xs font-sans font-medium uppercase tracking-[0.06em] text-[#1A1A18] hover:border-[#1A1A18] transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Print Receipt</span>
+              </button>
+
+              {activeReceipt.status !== 'cancelled' && activeReceipt.status !== 'ready' && activeReceipt.status !== 'completed' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Are you sure you wish to cancel this order?')) {
+                      cancelOrder(activeReceipt.orderId);
+                    }
+                  }}
+                  className="px-4 py-2.5 rounded-full border border-red-200 text-red-700 bg-red-50/50 hover:bg-red-100/60 text-xs font-sans font-medium uppercase tracking-[0.06em] transition-colors cursor-pointer"
+                >
+                  Cancel Order
+                </button>
+              )}
+            </div>
 
             <button
               onClick={() => {
@@ -689,6 +775,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                     <img
                       src={item.product.image}
                       alt={item.product.name}
+                      onError={handleImageError}
                       className="w-12 h-12 rounded-lg object-cover border border-[#1A1A18]/10 flex-shrink-0"
                       referrerPolicy="no-referrer"
                     />
