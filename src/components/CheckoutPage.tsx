@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Lock, 
   MapPin, 
@@ -13,13 +13,16 @@ import {
   Minus, 
   Coffee, 
   Printer, 
-  ShoppingBag
+  ShoppingBag,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useCart } from '../context/CartContext';
 import { STORE_LOCATIONS } from '../data/coffeeData';
 import { PageType, Order } from '../types';
 import { handleImageError } from '../utils/imageFallback';
+import { KineticTextRoll, KineticCounter } from './KineticTypography';
 
 interface CheckoutPageProps {
   onNavigate: (page: PageType) => void;
@@ -68,6 +71,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
   const [formError, setFormError] = useState<string | null>(null);
   const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(720); // 12 minutes countdown
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // 1. ORDER CONFIRMATION VIEW
   const activeReceipt = completedOrder || (activeOrder && activeOrder.status !== 'completed' ? activeOrder : null);
@@ -385,17 +389,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
               </button>
 
               {activeReceipt.status !== 'cancelled' && activeReceipt.status !== 'ready' && activeReceipt.status !== 'completed' && (
-                <button
+                <motion.button
                   type="button"
-                  onClick={() => {
-                    if (window.confirm('Are you sure you wish to cancel this order?')) {
-                      cancelOrder(activeReceipt.orderId);
-                    }
-                  }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setShowCancelModal(true)}
                   className="px-4 py-2.5 rounded-full border border-red-200 text-red-700 bg-red-50/50 hover:bg-red-100/60 text-xs font-sans font-medium uppercase tracking-[0.06em] transition-colors cursor-pointer"
                 >
                   Cancel Order
-                </button>
+                </motion.button>
               )}
             </div>
 
@@ -410,9 +412,82 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {/* Quiet-Luxury Cancel Confirmation Modal */}
+          <AnimatePresence>
+            {showCancelModal && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowCancelModal(false)}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1A18]/65 backdrop-blur-md"
+              >
+                <motion.div
+                  onClick={(e) => e.stopPropagation()}
+                  initial={{ opacity: 0, scale: 0.94, y: 16 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96, y: 12 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative w-full max-w-md bg-[#FAF8F5] rounded-3xl p-6 sm:p-7 shadow-[0_24px_64px_rgba(26,26,24,0.3)] border border-[#9D8461]/30 space-y-5"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 flex items-center justify-center">
+                      <AlertTriangle className="w-6 h-6" />
+                    </div>
+                    <motion.button
+                      whileHover={{ rotate: 90, scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowCancelModal(false)}
+                      className="p-1.5 text-[#1A1A18]/45 hover:text-[#1A1A18] rounded-full hover:bg-[#1A1A18]/5 transition-colors cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </motion.button>
+                  </div>
+
+                  <div className="space-y-1.5 font-sans">
+                    <span className="text-[10px] uppercase font-semibold tracking-wider text-amber-700 block">
+                      Order Cancellation
+                    </span>
+                    <h3 className="font-serif text-2xl font-light text-[#1A1A18]">
+                      Void this Order Ticket?
+                    </h3>
+                    <p className="text-xs text-[#1A1A18]/70 leading-relaxed [text-wrap:pretty]">
+                      Cancelling order <span className="font-mono text-[#1A1A18] font-semibold">{activeReceipt.orderId}</span> will immediately halt dosing at the espresso bar. Any payment authorization will be reversed back to your card.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-2 font-sans text-xs">
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setShowCancelModal(false)}
+                      className="flex-1 py-3 rounded-full border border-[#1A1A18]/20 bg-white text-[#1A1A18] hover:bg-[#FAF8F5] font-semibold uppercase tracking-[0.06em] transition-all cursor-pointer"
+                    >
+                      Keep My Order
+                    </motion.button>
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        cancelOrder(activeReceipt.orderId);
+                        setShowCancelModal(false);
+                      }}
+                      className="flex-1 py-3 rounded-full border border-red-600 bg-red-600 text-white hover:bg-red-700 font-semibold uppercase tracking-[0.06em] transition-all cursor-pointer shadow-xs"
+                    >
+                      Confirm Cancel
+                    </motion.button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     );
+
   }
 
   // 2. EMPTY CART VIEW
@@ -452,11 +527,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
     <div className="py-8 sm:py-12 px-4 sm:px-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
       <div className="max-w-3xl space-y-2 border-b border-[#1A1A18]/10 pb-6">
-        <span className="font-sans text-[11px] font-medium uppercase tracking-[0.06em] text-[#9D8461] block">
+        <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9D8461] block">
           Dispatch & Settlement
         </span>
-        <h1 className="font-serif font-light text-4xl sm:text-5xl text-[#1A1A18] tracking-[-0.02em]">
-          Review & Place Order
+        <h1 className="font-serif font-light text-4xl sm:text-5xl text-[#1A1A18] tracking-[-0.03em]">
+          <KineticTextRoll text="Review & Place Order" />
         </h1>
         <p className="font-sans text-xs sm:text-sm text-[#1A1A18]/70">
           Verify fulfillment preference, configure barista tip, and complete your secure order.
@@ -883,31 +958,41 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
 
             {/* Financial Calculations */}
             <div className="space-y-1.5 font-sans text-xs text-[#1A1A18]/70 pt-2 border-t border-[#1A1A18]/10">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-baseline">
                 <span>Subtotal</span>
-                <span className="font-medium text-[#1A1A18]">${subtotal.toFixed(2)}</span>
+                <span className="font-semibold text-[#1A1A18]">
+                  <KineticCounter value={subtotal} prefix="$" decimals={2} />
+                </span>
               </div>
 
               {discount > 0 && (
-                <div className="flex justify-between text-[#9D8461] font-semibold">
+                <div className="flex justify-between items-baseline text-[#9D8461] font-semibold">
                   <span>Promo Discount</span>
-                  <span>-${discount.toFixed(2)}</span>
+                  <span>
+                    -<KineticCounter value={discount} prefix="$" decimals={2} />
+                  </span>
                 </div>
               )}
 
-              <div className="flex justify-between">
+              <div className="flex justify-between items-baseline">
                 <span>Tax (8.75%)</span>
-                <span className="font-medium text-[#1A1A18]">${tax.toFixed(2)}</span>
+                <span className="font-medium text-[#1A1A18]">
+                  <KineticCounter value={tax} prefix="$" decimals={2} />
+                </span>
               </div>
 
-              <div className="flex justify-between">
+              <div className="flex justify-between items-baseline">
                 <span>Barista Gratuity</span>
-                <span className="font-medium text-[#1A1A18]">${calculatedTip.toFixed(2)}</span>
+                <span className="font-medium text-[#1A1A18]">
+                  <KineticCounter value={calculatedTip} prefix="$" decimals={2} />
+                </span>
               </div>
 
-              <div className="flex justify-between items-baseline text-base text-[#1A1A18] pt-2 border-t border-[#1A1A18]/10">
-                <span className="font-serif text-lg">Total Due</span>
-                <span className="font-serif font-light text-2xl">${total.toFixed(2)}</span>
+              <div className="flex justify-between items-baseline text-base text-[#1A1A18] pt-2 border-t border-[#1A1A18]/10 font-serif">
+                <span className="text-lg">Total Due</span>
+                <span className="font-light text-2xl tracking-[-0.02em]">
+                  <KineticCounter value={total} prefix="$" decimals={2} />
+                </span>
               </div>
             </div>
 
@@ -925,14 +1010,16 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
             )}
 
             {/* Submit Order Button */}
-            <button
+            <motion.button
               id="checkout-place-order-btn"
               disabled={isProcessing}
+              whileHover={!isProcessing ? { scale: 1.02 } : undefined}
+              whileTap={!isProcessing ? { scale: 0.98 } : undefined}
               onClick={handlePlaceOrder}
-              className={`w-full py-3.5 min-h-[44px] rounded-full border border-[#1A1A18] text-xs font-sans font-medium uppercase tracking-[0.08em] flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer ${
+              className={`w-full py-3.5 min-h-[44px] rounded-full border border-[#1A1A18] text-xs font-sans font-semibold uppercase tracking-[0.08em] flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer ${
                 isProcessing
                   ? 'bg-[#1A1A18]/50 text-white cursor-wait'
-                  : 'bg-[#1A1A18] text-[#F8F7F4] hover:bg-transparent hover:text-[#1A1A18]'
+                  : 'bg-[#1A1A18] text-[#FAF8F5] hover:bg-[#2A2622]'
               }`}
             >
               {isProcessing ? (
@@ -946,7 +1033,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                   <span>Authorize & Place Order • ${total.toFixed(2)}</span>
                 </>
               )}
-            </button>
+            </motion.button>
 
             <div className="flex items-center justify-center gap-1.5 text-[10px] font-sans uppercase tracking-[0.04em] text-[#1A1A18]/50">
               <ShieldCheck className="w-3 h-3 text-[#9D8461]" />

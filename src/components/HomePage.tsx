@@ -15,7 +15,8 @@ import { TerroirStoryline } from './TerroirStoryline';
 import {
   KineticHeroHeadline,
   KineticParagraphReveal,
-  KineticMetric
+  KineticMetric,
+  KineticTextRoll
 } from './KineticTypography';
 
 interface HomePageProps {
@@ -74,22 +75,26 @@ export const HomePage: React.FC<HomePageProps> = ({
             />
 
             <div className="flex flex-wrap items-center gap-3 pt-1">
-              <button
+              <motion.button
                 id="hero-order-menu-btn"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => onNavigate('menu')}
-                className="px-7 sm:px-8 py-3 sm:py-3.5 min-h-[44px] rounded-full border border-[#1A1A18] bg-[#1A1A18] text-[#F8F7F4] hover:bg-transparent hover:text-[#1A1A18] active:scale-[0.98] transition-all font-sans text-xs font-medium tracking-[0.06em] uppercase flex items-center justify-center cursor-pointer shadow-xs"
+                className="px-7 sm:px-8 py-3 sm:py-3.5 min-h-[44px] rounded-full border border-[#1A1A18] bg-[#1A1A18] text-[#FAF8F5] hover:bg-[#2A2622] transition-all font-sans text-xs font-semibold tracking-[0.08em] uppercase flex items-center justify-center cursor-pointer shadow-xs"
               >
                 <span>Order Drinks</span>
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
                 id="hero-gallery-btn"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => onNavigate('gallery')}
-                className="px-6 sm:px-7 py-3 sm:py-3.5 min-h-[44px] rounded-full border border-[#1A1A18]/20 hover:border-[#1A1A18] active:scale-[0.98] text-[#1A1A18] transition-all font-sans text-xs font-medium tracking-[0.06em] uppercase flex items-center justify-center gap-2 cursor-pointer"
+                className="px-6 sm:px-7 py-3 sm:py-3.5 min-h-[44px] rounded-full border border-[#1A1A18]/25 hover:border-[#1A1A18] hover:bg-white/60 text-[#1A1A18] transition-all font-sans text-xs font-semibold tracking-[0.08em] uppercase flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Compass className="w-3.5 h-3.5 text-[#9D8461]" />
                 <span>Explore Lab</span>
-              </button>
+              </motion.button>
             </div>
 
             {/* Technical Metadata Bar */}
@@ -180,11 +185,11 @@ export const HomePage: React.FC<HomePageProps> = ({
       <section className="max-w-7xl mx-auto px-4 sm:px-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[#1A1A18]/10">
           <div className="space-y-1">
-            <span className="font-sans text-[11px] font-medium uppercase tracking-[0.06em] text-[#9D8461] block">
+            <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9D8461] block">
               Seasonal Collection
             </span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-light text-[#1A1A18] tracking-[-0.025em]">
-              Featured Roaster Extractions
+            <h2 className="font-serif text-3xl sm:text-4xl font-light text-[#1A1A18] tracking-[-0.03em]">
+              <KineticTextRoll text="Featured Roaster Extractions" />
             </h2>
             <p className="font-sans text-[14px] text-[#1A1A18]/65 leading-[1.6]">
               Hand-selected micro-lots, cold extractions, and single-origin whole bean roasts.

@@ -433,3 +433,120 @@ export const KineticMagneticHover: React.FC<KineticMagneticHoverProps> = ({
     </motion.div>
   );
 };
+
+interface KineticCounterProps {
+  value: number;
+  prefix?: string;
+  suffix?: string;
+  decimals?: number;
+  className?: string;
+}
+
+/**
+ * KineticCounter: Smoothly animated numerical rolling transition
+ * perfect for dynamic prices, calorie counts, SCA scores, and caffeine indicators.
+ */
+export const KineticCounter: React.FC<KineticCounterProps> = ({
+  value,
+  prefix = '',
+  suffix = '',
+  decimals = 2,
+  className = '',
+}) => {
+  const shouldReduceMotion = useReducedMotion();
+  const [displayValue, setDisplayValue] = useState(value);
+
+  useEffect(() => {
+    if (shouldReduceMotion) {
+      setDisplayValue(value);
+      return;
+    }
+    const start = displayValue;
+    const end = value;
+    if (start === end) return;
+    const duration = 400;
+    const startTime = performance.now();
+
+    const animateNumber = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      const current = start + (end - start) * easeProgress;
+      setDisplayValue(current);
+
+      if (progress < 1) {
+        requestAnimationFrame(animateNumber);
+      } else {
+        setDisplayValue(end);
+      }
+    };
+
+    const animFrame = requestAnimationFrame(animateNumber);
+    return () => cancelAnimationFrame(animFrame);
+  }, [value, shouldReduceMotion]);
+
+  const formatted = decimals > 0 
+    ? displayValue.toFixed(decimals) 
+    : Math.round(displayValue).toString();
+
+  return (
+    <span className={`inline-flex items-baseline tabular-nums ${className}`}>
+      {prefix && <span>{prefix}</span>}
+      <motion.span
+        key={value}
+        initial={{ opacity: 0.8, y: -2 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        {formatted}
+      </motion.span>
+      {suffix && <span>{suffix}</span>}
+    </span>
+  );
+};
+
+interface KineticTextRollProps {
+  text: string;
+  className?: string;
+  stagger?: number;
+  delay?: number;
+}
+
+/**
+ * KineticTextRoll: Editorial letter/word roll effect for headlines and modal titles
+ */
+export const KineticTextRoll: React.FC<KineticTextRollProps> = ({
+  text,
+  className = '',
+  stagger = 0.02,
+  delay = 0.05,
+}) => {
+  const shouldReduceMotion = useReducedMotion();
+  const words = useMemo(() => text.split(' '), [text]);
+
+  if (shouldReduceMotion) {
+    return <span className={className}>{text}</span>;
+  }
+
+  return (
+    <span className={`inline-flex flex-wrap gap-x-[0.25em] ${className}`}>
+      {words.map((word, wordIdx) => (
+        <span key={`${word}-${wordIdx}`} className="inline-block overflow-hidden py-0.5 -my-0.5">
+          <motion.span
+            initial={{ y: '100%', opacity: 0, rotateZ: 3 }}
+            animate={{ y: '0%', opacity: 1, rotateZ: 0 }}
+            transition={{
+              duration: 0.65,
+              delay: delay + wordIdx * stagger,
+              ease: KINETIC_EASE_OUT,
+            }}
+            className="inline-block origin-bottom-left will-change-transform"
+          >
+            {word}
+          </motion.span>
+        </span>
+      ))}
+    </span>
+  );
+};

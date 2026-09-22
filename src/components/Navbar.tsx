@@ -14,7 +14,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
-  const { itemCount, setIsCartOpen, activeOrder } = useCart();
+  const { itemCount, setIsCartOpen } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -84,18 +84,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
             })}
           </nav>
 
-          {activeOrder && activeOrder.status !== 'completed' && (
-            <button
-              onClick={() => handleNav('checkout')}
-              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#9D8461] bg-[#9D8461]/10 text-[#9D8461] text-[11px] font-sans font-medium hover:bg-[#9D8461]/20 transition-colors"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#9D8461] animate-pulse" />
-              <span>#{activeOrder.orderId} • {activeOrder.status}</span>
-            </button>
-          )}
-
           {/* Cart Bag trigger button */}
-          <button
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             id="nav-cart-btn"
             onClick={() => setIsCartOpen(true)}
             className="relative px-3.5 py-1.5 min-h-[40px] rounded-full border border-[#1A1A18] text-[#1A1A18] hover:bg-[#1A1A18] hover:text-[#F8F7F4] transition-all text-[11px] font-sans font-medium uppercase tracking-[0.06em] flex items-center gap-2 group cursor-pointer shrink-0"
@@ -108,7 +100,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
                 {itemCount}
               </span>
             )}
-          </button>
+          </motion.button>
 
           {/* Mobile hamburger toggle */}
           <button

@@ -12,6 +12,7 @@ import {
   VolumeX
 } from 'lucide-react';
 import { PageType } from '../types';
+import { KineticTextRoll } from './KineticTypography';
 
 interface StoryChapter {
   id: string;
@@ -124,12 +125,12 @@ export const TerroirStoryline: React.FC<TerroirStorylineProps> = ({ onNavigate }
       {/* Editorial Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-[#1A1A18]/10">
         <div className="space-y-1">
-          <span className="font-sans text-[11px] font-medium uppercase tracking-[0.06em] text-[#9D8461] flex items-center gap-1.5">
+          <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9D8461] flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" />
             The Craft Story
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-light text-[#1A1A18] tracking-[-0.025em]">
-            From Volcanic Soil to Finished Cup
+          <h2 className="font-serif text-3xl sm:text-4xl font-light text-[#1A1A18] tracking-[-0.03em]">
+            <KineticTextRoll text="From Volcanic Soil to Finished Cup" />
           </h2>
           <p className="font-sans text-[14px] text-[#1A1A18]/70 leading-[1.6] max-w-[55ch] [text-wrap:pretty]">
             Specialty coffee is not an industrial commodity. Follow the lifecycle of our seasonal Ethiopian micro-lot as it journeys from high-altitude slopes to your morning extraction.
@@ -138,20 +139,30 @@ export const TerroirStoryline: React.FC<TerroirStorylineProps> = ({ onNavigate }
 
         {/* Step Indicator Badges */}
         <div className="flex items-center gap-2 font-sans text-xs font-medium">
-          {CHAPTERS.map((ch, idx) => (
-            <button
-              key={ch.id}
-              onClick={() => setActiveStepIndex(idx)}
-              className={`px-3 py-1.5 min-h-[36px] rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${
-                idx === activeStepIndex
-                  ? 'border-[#1A1A18] bg-[#1A1A18] text-[#F8F7F4]'
-                  : 'border-[#1A1A18]/15 bg-white text-[#1A1A18]/60 hover:border-[#1A1A18]/40 hover:text-[#1A1A18]'
-              }`}
-            >
-              <span className="text-[10px] font-mono opacity-60">{ch.step}</span>
-              <span className="hidden sm:inline">{ch.phase.split(' ')[0]}</span>
-            </button>
-          ))}
+          {CHAPTERS.map((ch, idx) => {
+            const isActive = idx === activeStepIndex;
+            return (
+              <button
+                key={ch.id}
+                onClick={() => setActiveStepIndex(idx)}
+                className={`relative px-3.5 py-1.5 min-h-[36px] rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isActive
+                    ? 'text-[#FAF8F5] font-semibold'
+                    : 'text-[#1A1A18]/65 hover:text-[#1A1A18] border border-[#1A1A18]/15 bg-white hover:border-[#1A1A18]/40'
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeStoryChapterPill"
+                    className="absolute inset-0 bg-[#1A1A18] rounded-full -z-10 shadow-xs"
+                    transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                  />
+                )}
+                <span className="text-[10px] font-mono opacity-60">{ch.step}</span>
+                <span className="hidden sm:inline">{ch.phase.split(' ')[0]}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
